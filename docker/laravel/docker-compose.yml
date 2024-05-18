@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    image: xcurvnubaim/sisop-shaniz696969
+    environment:
+      APP_ENV: production
+      APP_KEY: base64:IkpV7upEVtsaFPo7yUeE7M2cknBww9N8vglFG5J2NdU=
+      DB_HOST: dbts
+      DB_PORT: 3306
+      DB_DATABASE: laravel
+      DB_USERNAME: root
+      DB_PASSWORD: 
+    ports:
+      - "9090:8000"
+    depends_on:
+      - dbts
+    networks:
+      - Shani-net
+
+  dbts:
+    image: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ALLOW_EMPTY_PASSWORD: true
+    networks:
+      - Shani-net
+
+networks:
+  Shani-net:
+    driver: bridge

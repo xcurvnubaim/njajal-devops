@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  fe:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - ./erp-fe/.env
+    ports:
+      - "3000:3000"
+
