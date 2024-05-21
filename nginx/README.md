@@ -37,6 +37,21 @@ sudo service nginx restart
 ### Result
 ![alt text](image-1.png)
 
+# Api path for every service in microservice backend
+
+```
+    location /<path>/ {
+        proxy_pass http://localhost:<port>/;
+
+        # Recommended headers to include
+        proxy_set_header Host $host;                      # Passes the original Host header
+        proxy_set_header X-Real-IP $remote_addr;          # Passes the client IP address
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # Maintains a chain of client IPs
+        proxy_set_header X-Forwarded-Proto $scheme;       # Indicates the original protocol (http/https)
+    }
+```
+
+### example : [file](./sites-available/microservice.com)
 
 # Setting SSL with Let's Encrypt using Certbot
 
@@ -71,3 +86,5 @@ sudo certbot renew --dry-run
 
 ### Result
 ![alt text](image-2.png)
+
+
