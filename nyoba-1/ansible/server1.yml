@@ -1,0 +1,24 @@
+- hosts: gateway
+  become: yes
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+    - name: Copy Prometheus configuration file
+      copy:
+        src: ../server-1/prometheus.yml  
+        dest: /opt/prometheus.yml         
+        mode: '0644'
+    - name: Copy Docker Compose
+      copy:
+        src: ../server-1/docker-compose.yml
+        dest: /opt/docker-compose.yml
+    - name: Start Docker Compose
+      command: docker-compose up --build -d
+      args:
+        chdir: /opt/

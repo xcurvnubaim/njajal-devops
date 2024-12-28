@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s  # The default interval to scrape targets.
+  evaluation_interval: 15s  # The default interval for rule evaluations.
+  scrape_timeout: 10s  # Timeout for scraping targets.
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'  # Optional, add your Alertmanager instance
+
+# Rule files to load alerting and recording rules
+rule_files:
+  # - "first.rules"
+  # - "second.rules"
+
+# Scrape configuration for NGINX Exporter
+scrape_configs:
+  - job_name: 'nginx'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['nginx-exporter:9113']  # 'nginx-exporter' is the container name, replace if needed
+
+  # Scrape configuration for Prometheus itself (self-monitoring)
+  - job_name: 'prometheus'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['prometheus:9090']  # Target Prometheus itself for self-monitoring
