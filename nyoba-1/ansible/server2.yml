@@ -1,19 +1,30 @@
 - hosts: backend
   become: yes
+  vars:
+    docker_compose_project: /opt  # Directory for Docker Compose project files
+
   tasks:
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-    - name: Install Docker Compose
-      apt:
-        name: docker-compose
-        state: present
-    - name: Copy Docker Compose
+    - name: Copy Prometheus configuration file
       copy:
-        src: ./server2/docker-compose.yml
-        dest: /opt/docker-compose.yml
-    - name: Start Docker Compose
-      command: docker-compose up -d
-      args:
-        chdir: /opt/
+        src: ../server-2/prometheus.yml
+        dest: "{{ docker_compose_project }}/prometheus.yml"
+
+    - name: Copy Docker Compose file
+      copy:
+        src: ../server-2/docker-compose.yml
+        dest: "{{ docker_compose_project }}/docker-compose.yml"
+
+    - name: Tear down existing services
+      community.docker.docker_compose_v2:
+        project_src: "{{ docker_compose_project }}"
+        state: absent
+
+    - name: Start Docker Compose services
+      community.docker.docker_compose_v2:
+        project_src: "{{ docker_compose_project }}"
+        state: present
+      register: compose_output
+
+    - name: Show Docker Compose results
+      ansible.builtin.debug:
+        var: compose_output
