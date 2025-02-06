@@ -3,6 +3,8 @@
   become: yes
   vars:
     docker_compose_project: /opt/chartdb  # Directory for Docker Compose project files
+  vars_files:
+    - ../server-2/chartdb/docker-compose-vars.yml
   tasks:
     - name: Ensure Docker Compose directory exists
       ansible.builtin.file:
@@ -11,9 +13,12 @@
         mode: '0755'
 
     - name: Copy Docker Compose file
-      copy:
-        src: ../server-2/chartdb/docker-compose.yml
+      template:
+        src: ../server-2/chartdb/docker-compose.yml.j2
         dest: "{{ docker_compose_project }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: 0644
 
     - name: Tear down existing Docker Compose services
       community.docker.docker_compose_v2:

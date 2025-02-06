@@ -1,2 +1,3 @@
 *.pem
 inventory.ini
+*-vars.yml

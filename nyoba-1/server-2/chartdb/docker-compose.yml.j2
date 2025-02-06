@@ -13,21 +13,10 @@ services:
     image: xcurvnubaim/chartdb-be-custom:latest
     container_name: chartdb-be
     environment:
-      - MONGODB_URI=mongodb://root:example@db:27017
-      - DB_NAME=chartdb
+      - MONGODB_URI="{{ mongodb_uri }}"
+      - COLLECTION_NAME="{{ collection_name }}"
+      - DB_NAME="{{ db_name }}"
       - PORT=80
-
-  db:
-    image: mongodb/mongodb-community-server:latest
-    container_name: chartdb-db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    ports:
-      - "27017:27017" 
-    volumes:
-      - db-data:/data/db
-
 
 volumes:
   db-data: 
