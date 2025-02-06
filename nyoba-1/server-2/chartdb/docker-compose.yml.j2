@@ -13,9 +13,9 @@ services:
     image: xcurvnubaim/chartdb-be-custom:latest
     container_name: chartdb-be
     environment:
-      - MONGODB_URI="{{ mongodb_uri }}"
-      - COLLECTION_NAME="{{ collection_name }}"
-      - DB_NAME="{{ db_name }}"
+      - MONGODB_URI={{ mongodb_uri }}
+      - COLLECTION_NAME={{ collection_name }}
+      - DB_NAME={{ db_name }}
       - PORT=80
 
 volumes:
