@@ -1,0 +1,93 @@
+- name: Deploy Minio on Server
+  hosts: server
+  become: yes
+  vars_files:
+    - secret.yml
+  vars:
+    minio_data_dir: "/home/{{ ansible_user }}/minio/data"
+    minio_container_name: "minio"
+    minio_image: "quay.io/minio/minio"
+    minio_ports:
+      - "9000:9000"
+      - "9001:9001"
+  tasks:
+    - name: Ensure Minio data directory exists
+      ansible.builtin.file:
+        path: "{{ minio_data_dir }}"
+        state: directory
+        mode: '0644'
+
+    - name: Pull Minio Docker image
+      community.docker.docker_image:
+        name: "{{ minio_image }}"
+        source: pull
+
+    - name: Run Minio container
+      community.docker.docker_container:
+        name: "{{ minio_container_name }}"
+        image: "{{ minio_image }}"
+        state: started
+        restart_policy: always
+        ports: "{{ minio_ports }}"
+        volumes:
+          - "{{ minio_data_dir }}:/data"
+        env:
+          MINIO_ROOT_USER: "{{ minio_root_user }}"
+          MINIO_ROOT_PASSWORD: "{{ minio_root_password }}"
+        command: server /data --console-address ":9001"
+
+- name: Configure NGINX as Gateway on Server 1
+  hosts: gateway
+  become: yes
+  vars:
+    domain_name: storage.nubaim.me
+  tasks:
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+
+    - name: Install Certbot and NGINX plugin
+      apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        state: present
+
+    - name: Copy NGINX configuration template
+      template:
+        src: nginx.conf.j2
+        dest: "/etc/nginx/sites-available/{{ domain_name }}"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Enable NGINX site
+      file:
+        src: "/etc/nginx/sites-available/{{ domain_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ domain_name }}"
+        state: link
+
+    - name: Restart NGINX to apply changes
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Obtain SSL certificate using Certbot
+      command:
+        cmd: certbot --nginx -d "{{ domain_name }}" --non-interactive --agree-tos --email zhariffmarzuqi@gmail.com
+      register: certbot_output
+      failed_when: "'Failed' in certbot_output.stdout"
+
+    - name: Ensure NGINX is reloaded after Certbot
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: Set up automatic renewal of SSL certificates
+      cron:
+        name: "Renew Let's Encrypt certificate"
+        minute: "0"
+        hour: "3"
+        job: "certbot renew --quiet && systemctl reload nginx"
+        state: present
