@@ -1,0 +1,100 @@
+---
+- name: Create PostgreSQL database, user, and update pg_hba.conf
+  hosts: server
+  become: true
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Ensure PostgreSQL service is running
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Create PostgreSQL database
+      postgresql_db:
+        name: "{{ database }}"
+        state: present
+      become_user: postgres
+      ignore_errors: yes
+
+    - name: Create PostgreSQL user (no superuser)
+      postgresql_user:
+        db: "{{ database }}"
+        name: "{{ user }}"
+        password: "{{ password }}"
+        role_attr_flags: "NOSUPERUSER,NOCREATEDB,NOCREATEROLE"
+        state: present
+      become_user: postgres
+
+    - name: Grant all privileges on the database
+      postgresql_privs:
+        db: "{{ database }}"
+        role: "{{ user }}"
+        privs: ALL
+        type: database
+      become_user: postgres
+
+    - name: Grant all privileges on the public schema
+      postgresql_privs:
+        db: "{{ database }}"
+        role: "{{ user }}"
+        privs: ALL
+        type: schema
+        objs: public
+      become_user: postgres
+
+    - name: Grant all privileges on all tables in the database
+      postgresql_privs:
+        db: "{{ database }}"
+        role: "{{ user }}"
+        privs: ALL
+        type: table
+        objs: ALL_IN_SCHEMA
+      become_user: postgres
+
+    - name: Grant all privileges on all sequences in the database
+      postgresql_privs:
+        db: "{{ database }}"
+        role: "{{ user }}"
+        privs: ALL
+        type: sequence
+        objs: ALL_IN_SCHEMA
+      become_user: postgres
+    
+    - name: Revoke CONNECT privilege on all other databases
+      postgresql_privs:
+        db: "{{ item }}"
+        role: "{{ user }}"
+        privs: "CONNECT"
+        type: database
+        state: absent
+      loop:
+        - postgres
+        - template1
+      become_user: postgres
+
+    - name: Revoke USAGE on pg_catalog to hide other databases
+      postgresql_privs:
+        db: "{{ database }}"
+        role: "{{ user }}"
+        privs: "USAGE"
+        type: schema
+        objs: pg_catalog
+        state: absent
+      become_user: postgres
+
+    - name: Ensure user access is allowed in pg_hba.conf (avoid duplication)
+      lineinfile:
+        path: /etc/postgresql/16/main/pg_hba.conf
+        regexp: "^host\\s+{{ database }}\\s+{{ user }}\\s+0\\.0\\.0\\.0/0\\s+md5$"
+        line: "host    {{ database }}    {{ user }}    0.0.0.0/0    md5"
+        insertafter: EOF
+        state: present
+      notify: Restart PostgreSQL
+
+  handlers:
+    - name: Restart PostgreSQL
+      service:
+        name: postgresql
+        state: restarted

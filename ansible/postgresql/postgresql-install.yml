@@ -1,0 +1,34 @@
+---
+- name: Install and configure PostgreSQL
+  hosts: server
+  become: true
+  tasks:
+    - name: Install PostgreSQL and dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - postgresql
+        - postgresql-contrib
+        - python3-psycopg2
+      when: ansible_os_family == "Debian"
+
+    - name: Start and enable PostgreSQL service
+      service:
+        name: postgresql
+        state: started
+        enabled: true
+
+    - name: Ensure PostgreSQL listens on all interfaces
+      lineinfile:
+        path: /etc/postgresql/16/main/postgresql.conf
+        regexp: "^#?listen_addresses"
+        line: "listen_addresses = '*'"
+      notify: Restart PostgreSQL
+      when: ansible_os_family == "Debian"
+
+  handlers:
+    - name: Restart PostgreSQL
+      service:
+        name: postgresql
+        state: restarted
