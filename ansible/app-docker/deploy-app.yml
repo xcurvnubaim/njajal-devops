@@ -1,0 +1,98 @@
+- name: Deploy Docker Compose App 
+  hosts: server
+  become: yes
+  vars:
+    docker_compose_project: /var/www/example-app  # Directory for Docker Compose project files
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Ensure Docker Compose directory exists
+      ansible.builtin.file:
+        path: "{{ docker_compose_project }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy Docker Compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ docker_compose_project }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Pull latest Docker image
+      community.docker.docker_image:
+        name: "{{ image }}"  
+        source: pull
+        force_source: yes
+
+    - name: Tear down existing Docker Compose services
+      community.docker.docker_compose_v2:
+        project_src: "{{ docker_compose_project }}"
+        state: absent
+
+    - name: Start Docker Compose services
+      community.docker.docker_compose_v2:
+        project_src: "{{ docker_compose_project }}"
+        state: present
+      register: compose_output
+
+    - name: Show Docker Compose results
+      ansible.builtin.debug:
+        var: compose_output
+
+- name: Configure NGINX as Gateway on Server 1
+  hosts: gateway
+  become: yes
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+
+    - name: Install Certbot and NGINX plugin
+      apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        state: present
+
+    - name: Copy NGINX configuration template
+      template:
+        src: nginx.conf.j2
+        dest: "/etc/nginx/sites-available/{{ domain_name }}"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Enable NGINX site
+      file:
+        src: "/etc/nginx/sites-available/{{ domain_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ domain_name }}"
+        state: link
+
+    - name: Restart NGINX to apply changes
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Obtain SSL certificate using Certbot
+      command:
+        cmd: certbot --nginx -d "{{ domain_name }}" --non-interactive --agree-tos --email zhariffmarzuqi@gmail.com
+      register: certbot_output
+      failed_when: "'Failed' in certbot_output.stdout"
+
+    - name: Ensure NGINX is reloaded after Certbot
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: Set up automatic renewal of SSL certificates
+      cron:
+        name: "Renew Let's Encrypt certificate"
+        minute: "0"
+        hour: "3"
+        job: "certbot renew --quiet && systemctl reload nginx"
+        state: present

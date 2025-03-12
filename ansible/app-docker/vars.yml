@@ -1,0 +1,5 @@
+image: xcurvnubaim/njajal-go:latest
+container_name: njajal-go
+exposed_port: 8080
+internal_port: 8080
+domain_name: example-app.nubaim.me

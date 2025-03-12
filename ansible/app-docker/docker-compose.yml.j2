@@ -1,0 +1,12 @@
+services:
+  app:
+    image: {{ image }}
+    container_name: {{ container_name }}
+    ports:
+      - "{{ exposed_port }}:{{ internal_port }}"
+    environment:
+{% for var in env_vars %}
+      - {{ var }}
+{% endfor %}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
