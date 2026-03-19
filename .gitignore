@@ -1,3 +1,4 @@
 *.pem
 inventory.ini
 *-vars.yml
+**/*secret.yml
