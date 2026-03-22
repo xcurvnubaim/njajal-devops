@@ -2,16 +2,20 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: minio-ingress
+  namespace: default
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    traefik.ingress.kubernetes.io/router.middlewares: default-minio-cors@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
         - console-storage.zmarzuqi.dev
         - storage.zmarzuqi.dev
+        - "*.storage.zmarzuqi.dev"
       secretName: nubaim-me-tls
   rules:
+    # 1. Base API URL (e.g., for creating buckets, checking health)
     - host: storage.zmarzuqi.dev
       http:
         paths:
@@ -22,6 +26,18 @@ spec:
                 name: minio
                 port:
                   number: 9000
+    # 2. Wildcard Bucket URL (e.g., blobs-affine.storage.zmarzuqi.dev)
+    - host: "*.storage.zmarzuqi.dev" 
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9000
+    # 3. Web Console
     - host: console-storage.zmarzuqi.dev
       http:
         paths:

@@ -25,6 +25,8 @@ spec:
         - --console-address
         - :9090
         env:
+        - name: MINIO_DOMAIN               
+          value: "storage.zmarzuqi.dev"    
         - name: MINIO_ROOT_USER
           valueFrom:
             secretKeyRef:
