@@ -1,4 +1,5 @@
 # kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.20.0/cert-manager.yaml
+# kubectl create secret generic cloudflare-api-token --from-literal=api-token=<YOUR_TOKEN_HERE> -n cert-manager
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -10,6 +11,17 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
-      - http01:
+      # DNS-01 for wildcard domains
+      - selector:
+          dnsNames:
+            - "*.storage.zmarzuqi.dev"
+        dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+      # HTTP-01 for everything else (keeps affine, docmost working)
+      - selector: {}
+        http01:
           ingress:
             ingressClassName: traefik
