@@ -13,7 +13,7 @@ spec:
         - console-storage.zmarzuqi.dev
         - storage.zmarzuqi.dev
         - "*.storage.zmarzuqi.dev"
-      secretName: nubaim-me-tls
+      secretName: minio-tls
   rules:
     # 1. Base API URL (e.g., for creating buckets, checking health)
     - host: storage.zmarzuqi.dev
